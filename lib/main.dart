@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
-import 'home_screen.dart';
+import 'main_navigation.dart';
 
 void main() {
   runApp(const HomeworkTrackerApp());
@@ -33,30 +33,22 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  late Timer _timer;
-
   @override
   void initState() {
     super.initState();
 
-    _timer = Timer(
+    Timer(
       const Duration(seconds: 3),
       () {
         if (!mounted) return;
 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const HomeScreen(),
+            builder: (_) => const MainNavigation(),
           ),
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
   }
 
   @override
