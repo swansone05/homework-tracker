@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
-import 'main_navigation.dart';
+import 'views/main_navigation.dart';
 
 void main() {
   runApp(const HomeworkTrackerApp());
@@ -37,18 +37,15 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    Timer(
-      const Duration(seconds: 3),
-      () {
-        if (!mounted) return;
+    Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
 
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const MainNavigation(),
-          ),
-        );
-      },
-    );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const MainNavigation(),
+        ),
+      );
+    });
   }
 
   @override
@@ -64,22 +61,9 @@ class FallingDotsLoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            LoadingAnimationWidget.fallingDot(
-              color: Colors.blue,
-              size: 100,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Loading...',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        child: LoadingAnimationWidget.staggeredDotsWave(
+          color: Colors.blue,
+          size: 50,
         ),
       ),
     );
