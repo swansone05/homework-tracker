@@ -1,11 +1,21 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
+import 'firebase_options.dart';
+import 'views/login_screen.dart';
 import 'views/main_navigation.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const HomeworkTrackerApp());
 }
 
@@ -18,39 +28,39 @@ class HomeworkTrackerApp extends StatelessWidget {
       title: 'Homework Tracker',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+        ),
+        useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: const AuthGate(),
     );
   }
 }
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-
-    Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const MainNavigation(),
-        ),
-      );
-    });
-  }
+/// Decides which screen to show based on the Firebase login state.
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const FallingDotsLoadingScreen();
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Firebase is still checking the current authentication state.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const FallingDotsLoadingScreen();
+        }
+
+        // A Firebase user exists.
+        if (snapshot.hasData) {
+          return const MainNavigation();
+        }
+
+        // Nobody is logged in.
+        return const LoginScreen();
+      },
+    );
   }
 }
 
