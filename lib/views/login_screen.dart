@@ -19,6 +19,12 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage;
   bool _isLoading = false;
 
+  bool _isValidEmail(String email) {
+    return RegExp(
+      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+    ).hasMatch(email);
+  }
+
   Future<void> _handleLogin() async {
     FocusScope.of(context).unfocus();
 
@@ -28,6 +34,20 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.isEmpty || password.isEmpty) {
       setState(() {
         _errorMessage = 'Please enter both email and password.';
+      });
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid email address.';
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() {
+        _errorMessage = 'Password must be at least 6 characters long.';
       });
       return;
     }
@@ -53,9 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
-    // Successful login:
-    // AuthGate detects the Firebase authentication change
-    // and automatically shows MainNavigation.
+    // AuthGate detects the successful login automatically.
   }
 
   @override

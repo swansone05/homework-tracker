@@ -18,6 +18,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? _errorMessage;
   bool _isLoading = false;
 
+  bool _isValidEmail(String email) {
+    return RegExp(
+      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+    ).hasMatch(email);
+  }
+
   Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
 
@@ -31,10 +37,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
+    if (!_isValidEmail(email)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid email address.';
+      });
+      return;
+    }
+
     if (password.length < 6) {
       setState(() {
-        _errorMessage =
-            'Password must be at least 6 characters long.';
+        _errorMessage = 'Password must be at least 6 characters long.';
       });
       return;
     }
@@ -48,19 +60,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
-
     if (error != null) {
       setState(() {
+        _isLoading = false;
         _errorMessage = error;
       });
       return;
     }
 
-    // Firebase authStateChanges() in AuthGate will automatically
-    // detect the successful signup and show MainNavigation.
+    setState(() {
+      _isLoading = false;
+    });
+
+    // Firebase authStateChanges() updates AuthGate.
+    // Pop this screen so MainNavigation can be shown.
+    Navigator.of(context).pop();
   }
 
   @override
