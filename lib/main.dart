@@ -12,9 +12,12 @@ import 'views/main_navigation.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Prevent duplicate Firebase initialization
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
   runApp(const HomeworkTrackerApp());
 }
@@ -38,7 +41,6 @@ class HomeworkTrackerApp extends StatelessWidget {
   }
 }
 
-/// Decides which screen to show based on the Firebase login state.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -47,17 +49,14 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Firebase is still checking the current authentication state.
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const FallingDotsLoadingScreen();
         }
 
-        // A Firebase user exists.
         if (snapshot.hasData) {
           return const MainNavigation();
         }
 
-        // Nobody is logged in.
         return const LoginScreen();
       },
     );

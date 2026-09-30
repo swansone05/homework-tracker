@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "687100201009",
+    "firebase_url": "https://homework-tracker-3db31-default-rtdb.firebaseio.com",
     "project_id": "homework-tracker-3db31",
     "storage_bucket": "homework-tracker-3db31.firebasestorage.app"
   },

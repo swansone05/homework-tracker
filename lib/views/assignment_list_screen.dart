@@ -18,24 +18,66 @@ class _AssignmentListScreenState
 
   final Set<int> _selectedAssignments = {};
 
-  void _showAddAssignmentDialog() {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAssignments();
+  }
+
+  Future<void> _loadAssignments() async {
+    try {
+      await _presenter.loadAssignments();
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint(
+        'ERROR LOADING ASSIGNMENTS: $e',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error loading assignments: $e',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showAddAssignmentDialog() async {
     String title = '';
     DateTime? dueDate;
 
-    showDialog(
+    await showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Add Assignment'),
+              title: const Text(
+                'Add Assignment',
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     autofocus: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Assignment title',
+                    decoration:
+                        const InputDecoration(
+                      hintText:
+                          'Assignment title',
                     ),
                     onChanged: (value) {
                       title = value;
@@ -43,24 +85,34 @@ class _AssignmentListScreenState
                   ),
                   const SizedBox(height: 16),
                   ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.calendar_today),
+                    contentPadding:
+                        EdgeInsets.zero,
+                    leading: const Icon(
+                      Icons.calendar_today,
+                    ),
                     title: Text(
                       dueDate == null
                           ? 'Select due date'
-                          : '${dueDate!.month}/${dueDate!.day}/${dueDate!.year}',
+                          : '${dueDate!.month}/'
+                              '${dueDate!.day}/'
+                              '${dueDate!.year}',
                     ),
                     onTap: () async {
-                      final selectedDate = await showDatePicker(
+                      final selectedDate =
+                          await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime(2100),
+                        initialDate:
+                            DateTime.now(),
+                        firstDate:
+                            DateTime.now(),
+                        lastDate:
+                            DateTime(2100),
                       );
 
                       if (selectedDate != null) {
                         setDialogState(() {
-                          dueDate = selectedDate;
+                          dueDate =
+                              selectedDate;
                         });
                       }
                     },
@@ -70,29 +122,63 @@ class _AssignmentListScreenState
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pop(
+                      dialogContext,
+                    );
                   },
-                  child: const Text('Cancel'),
+                  child: const Text(
+                    'Cancel',
+                  ),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    if (title.trim().isEmpty || dueDate == null) {
+                  onPressed: () async {
+                    if (title.trim().isEmpty ||
+                        dueDate == null) {
                       return;
                     }
 
-                    setState(() {
-                      _presenter.addAssignment(
-                        title.trim(),
-                        dueDate!,
+                    final assignmentTitle =
+                        title.trim();
+
+                    final assignmentDueDate =
+                        dueDate!;
+
+                    try {
+                      await _presenter
+                          .addAssignment(
+                        assignmentTitle,
+                        assignmentDueDate,
                       );
-                    });
 
-                    Navigator.pop(context);
+                      if (!mounted) return;
 
-                    _checkDueDate(
-                      title.trim(),
-                      dueDate!,
-                    );
+                      Navigator.pop(
+                        dialogContext,
+                      );
+
+                      setState(() {});
+
+                      _checkDueDate(
+                        assignmentTitle,
+                        assignmentDueDate,
+                      );
+                    } catch (e) {
+                      debugPrint(
+                        'ERROR ADDING ASSIGNMENT: $e',
+                      );
+
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Error adding assignment: $e',
+                          ),
+                        ),
+                      );
+                    }
                   },
                   child: const Text('Add'),
                 ),
@@ -123,7 +209,9 @@ class _AssignmentListScreenState
     );
 
     final daysUntilDue =
-        dueDateOnly.difference(todayOnly).inDays;
+        dueDateOnly
+            .difference(todayOnly)
+            .inDays;
 
     if (daysUntilDue == 0 ||
         daysUntilDue == 1 ||
@@ -136,25 +224,40 @@ class _AssignmentListScreenState
     }
   }
 
-  void _toggleAssignmentCompletion(int index) {
-    setState(() {
-      _presenter.toggleCompleted(index);
-    });
+  Future<void> _toggleAssignmentCompletion(
+    int index,
+  ) async {
+    try {
+      await _presenter.toggleCompleted(index);
+
+      if (!mounted) return;
+
+      setState(() {});
+    } catch (e) {
+      debugPrint(
+        'ERROR UPDATING ASSIGNMENT: $e',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error updating assignment: $e',
+          ),
+        ),
+      );
+    }
   }
 
   void _toggleSelection(int index) {
     setState(() {
-      if (_selectedAssignments.contains(index)) {
+      if (_selectedAssignments
+          .contains(index)) {
         _selectedAssignments.remove(index);
       } else {
         _selectedAssignments.add(index);
       }
-    });
-  }
-
-  void _clearSelection() {
-    setState(() {
-      _selectedAssignments.clear();
     });
   }
 
@@ -163,11 +266,14 @@ class _AssignmentListScreenState
       return;
     }
 
-    final confirmed = await showDialog<bool>(
+    final confirmed =
+        await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete assignments?'),
+          title: const Text(
+            'Delete assignments?',
+          ),
           content: Text(
             'Are you sure you want to delete '
             '${_selectedAssignments.length} '
@@ -176,107 +282,155 @@ class _AssignmentListScreenState
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context, false);
+                Navigator.pop(
+                  context,
+                  false,
+                );
               },
-              child: const Text('Cancel'),
+              child: const Text(
+                'Cancel',
+              ),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context, true);
+                Navigator.pop(
+                  context,
+                  true,
+                );
               },
-              child: const Text('Delete'),
+              child: const Text(
+                'Delete',
+              ),
             ),
           ],
         );
       },
     );
 
-    if (confirmed == true) {
-      setState(() {
-        _presenter.deleteAssignments(
-          _selectedAssignments,
-        );
+    if (confirmed != true) {
+      return;
+    }
 
+    try {
+      await _presenter.deleteAssignments(
+        _selectedAssignments,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
         _selectedAssignments.clear();
       });
+    } catch (e) {
+      debugPrint(
+        'ERROR DELETING ASSIGNMENTS: $e',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error deleting assignments: $e',
+          ),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final assignments = _presenter.assignments;
-    final isSelecting = _selectedAssignments.isNotEmpty;
+    final assignments =
+        _presenter.assignments;
+
+    final isSelecting =
+        _selectedAssignments.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          isSelecting
-              ? '${_selectedAssignments.length} selected'
-              : 'Assignments',
-        ),
-        leading: isSelecting
-            ? IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _clearSelection,
-              )
-            : null,
-        actions: isSelecting
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: _deleteSelectedAssignments,
-                ),
-              ]
-            : null,
-      ),
-      body: assignments.isEmpty
+      body: _isLoading
           ? const Center(
-              child: Text('No assignments yet.'),
+              child: CircularProgressIndicator(),
             )
-          : ListView.builder(
-              itemCount: assignments.length,
-              itemBuilder: (context, index) {
-                final assignment = assignments[index];
-                final isSelected =
-                    _selectedAssignments.contains(index);
-
-                return GestureDetector(
-                  onLongPress: () {
-                    _toggleSelection(index);
-                  },
-                  child: CheckboxListTile(
-                    selected: isSelected,
-                    title: Text(
-                      assignment.title,
-                      style: TextStyle(
-                        decoration: assignment.isCompleted
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Due: '
-                      '${assignment.dueDate.month}/'
-                      '${assignment.dueDate.day}/'
-                      '${assignment.dueDate.year}',
-                    ),
-                    value: assignment.isCompleted,
-                    onChanged: (_) {
-                      if (isSelecting) {
-                        _toggleSelection(index);
-                      } else {
-                        _toggleAssignmentCompletion(index);
-                      }
-                    },
+          : assignments.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No assignments yet.',
                   ),
-                );
-              },
-            ),
+                )
+              : ListView.builder(
+                  padding:
+                      const EdgeInsets.only(
+                    top: 8,
+                    bottom: 100,
+                  ),
+                  itemCount:
+                      assignments.length,
+                  itemBuilder:
+                      (context, index) {
+                    final assignment =
+                        assignments[index];
+
+                    final isSelected =
+                        _selectedAssignments
+                            .contains(index);
+
+                    return GestureDetector(
+                      onLongPress: () {
+                        _toggleSelection(
+                          index,
+                        );
+                      },
+                      child:
+                          CheckboxListTile(
+                        selected: isSelected,
+                        title: Text(
+                          assignment.title,
+                          style: TextStyle(
+                            decoration: assignment
+                                    .isCompleted
+                                ? TextDecoration
+                                    .lineThrough
+                                : TextDecoration
+                                    .none,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Due: '
+                          '${assignment.dueDate.month}/'
+                          '${assignment.dueDate.day}/'
+                          '${assignment.dueDate.year}',
+                        ),
+                        value:
+                            assignment.isCompleted,
+                        onChanged: (_) {
+                          if (isSelecting) {
+                            _toggleSelection(
+                              index,
+                            );
+                          } else {
+                            _toggleAssignmentCompletion(
+                              index,
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
       floatingActionButton: isSelecting
-          ? null
+          ? FloatingActionButton(
+              onPressed:
+                  _deleteSelectedAssignments,
+              child: const Icon(
+                Icons.delete,
+              ),
+            )
           : FloatingActionButton(
-              onPressed: _showAddAssignmentDialog,
-              child: const Icon(Icons.add),
+              onPressed:
+                  _showAddAssignmentDialog,
+              child: const Icon(
+                Icons.add,
+              ),
             ),
     );
   }

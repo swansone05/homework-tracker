@@ -9,10 +9,12 @@ class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  State<MainNavigation> createState() =>
+      _MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _MainNavigationState
+    extends State<MainNavigation> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
@@ -43,11 +45,11 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
       ),
       body: _screens[_selectedIndex],
-
-      // Bottom navigation with a black space underneath.
       bottomNavigationBar: Container(
         color: Colors.black,
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(
+          bottom: 8,
+        ),
         child: Container(
           color: Colors.white,
           child: BottomNavigationBar(
@@ -56,7 +58,8 @@ class _MainNavigationState extends State<MainNavigation> {
             onTap: _onItemTapped,
             selectedItemColor: Colors.black,
             unselectedItemColor: Colors.grey,
-            type: BottomNavigationBarType.fixed,
+            type:
+                BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.home),
