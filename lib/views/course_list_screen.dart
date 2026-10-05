@@ -15,12 +15,28 @@ class _CourseListScreenState
   final CoursePresenter _presenter =
       CoursePresenter();
 
+  final TextEditingController _searchController =
+      TextEditingController();
+
   bool _isLoading = true;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadCourses();
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCourses() async {
@@ -60,7 +76,6 @@ class _CourseListScreenState
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Add Course'),
-
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -73,9 +88,7 @@ class _CourseListScreenState
                   name = value;
                 },
               ),
-
               const SizedBox(height: 16),
-
               TextField(
                 decoration: const InputDecoration(
                   labelText: 'Description (optional)',
@@ -86,7 +99,6 @@ class _CourseListScreenState
               ),
             ],
           ),
-
           actions: [
             TextButton(
               onPressed: () {
@@ -94,7 +106,6 @@ class _CourseListScreenState
               },
               child: const Text('Cancel'),
             ),
-
             ElevatedButton(
               onPressed: () async {
                 if (name.trim().isEmpty) {
@@ -143,48 +154,112 @@ class _CourseListScreenState
   Widget build(BuildContext context) {
     final courses = _presenter.courses;
 
+    final filteredCourses = courses.where((course) {
+      final query = _searchQuery.trim().toLowerCase();
+
+      if (query.isEmpty) {
+        return true;
+      }
+
+      final name = course.name.toLowerCase();
+
+      final description =
+          course.description?.toLowerCase() ?? '';
+
+      return name.contains(query) ||
+          description.contains(query);
+    }).toList();
+
     return Scaffold(
       // IMPORTANT:
       // There is intentionally NO AppBar here.
       //
-      // Your main navigation already appears to
-      // provide the "Courses" title.
+      // Your main navigation already provides
+      // the "Courses" title.
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(),
             )
-          : courses.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No courses yet.',
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    8,
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(
-                    top: 8,
-                    bottom: 100,
-                  ),
-                  itemCount: courses.length,
-                  itemBuilder: (context, index) {
-                    final course = courses[index];
-
-                    return ListTile(
-                      title: Text(
-                        course.name,
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search courses...',
+                      prefixIcon: const Icon(
+                        Icons.search,
                       ),
-                      subtitle:
-                          course.description == null ||
-                                  course.description!
-                                      .trim()
-                                      .isEmpty
-                              ? null
-                              : Text(
-                                  course.description!,
-                                ),
-                    );
-                  },
+                      suffixIcon:
+                          _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                  ),
+                                  onPressed: () {
+                                    _searchController
+                                        .clear();
+                                  },
+                                )
+                              : null,
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
 
+                Expanded(
+                  child: filteredCourses.isEmpty
+                      ? Center(
+                          child: Text(
+                            _searchQuery.trim().isEmpty
+                                ? 'No courses yet.'
+                                : 'No courses found.',
+                          ),
+                        )
+                      : ListView.builder(
+                          padding:
+                              const EdgeInsets.only(
+                            top: 8,
+                            bottom: 100,
+                          ),
+                          itemCount:
+                              filteredCourses.length,
+                          itemBuilder:
+                              (context, index) {
+                            final course =
+                                filteredCourses[index];
+
+                            return ListTile(
+                              title: Text(
+                                course.name,
+                              ),
+                              subtitle:
+                                  course.description ==
+                                              null ||
+                                          course
+                                              .description!
+                                              .trim()
+                                              .isEmpty
+                                      ? null
+                                      : Text(
+                                          course
+                                              .description!,
+                                        ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddCourseDialog,
         child: const Icon(Icons.add),

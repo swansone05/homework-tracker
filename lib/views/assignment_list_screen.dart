@@ -18,12 +18,28 @@ class _AssignmentListScreenState
 
   final Set<int> _selectedAssignments = {};
 
+  final TextEditingController _searchController =
+      TextEditingController();
+
   bool _isLoading = true;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadAssignments();
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAssignments() async {
@@ -346,77 +362,155 @@ class _AssignmentListScreenState
     final isSelecting =
         _selectedAssignments.isNotEmpty;
 
+    // Create a list of the ORIGINAL assignment
+    // indexes that match the search.
+    //
+    // This is important because the presenter
+    // still expects the original assignment index
+    // when completing/deleting assignments.
+    final filteredIndexes =
+        <int>[];
+
+    final query =
+        _searchQuery.trim().toLowerCase();
+
+    for (int i = 0;
+        i < assignments.length;
+        i++) {
+      final assignment = assignments[i];
+
+      if (query.isEmpty ||
+          assignment.title
+              .toLowerCase()
+              .contains(query)) {
+        filteredIndexes.add(i);
+      }
+    }
+
     return Scaffold(
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(),
             )
-          : assignments.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No assignments yet.',
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    8,
                   ),
-                )
-              : ListView.builder(
-                  padding:
-                      const EdgeInsets.only(
-                    top: 8,
-                    bottom: 100,
-                  ),
-                  itemCount:
-                      assignments.length,
-                  itemBuilder:
-                      (context, index) {
-                    final assignment =
-                        assignments[index];
-
-                    final isSelected =
-                        _selectedAssignments
-                            .contains(index);
-
-                    return GestureDetector(
-                      onLongPress: () {
-                        _toggleSelection(
-                          index,
-                        );
-                      },
-                      child:
-                          CheckboxListTile(
-                        selected: isSelected,
-                        title: Text(
-                          assignment.title,
-                          style: TextStyle(
-                            decoration: assignment
-                                    .isCompleted
-                                ? TextDecoration
-                                    .lineThrough
-                                : TextDecoration
-                                    .none,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'Due: '
-                          '${assignment.dueDate.month}/'
-                          '${assignment.dueDate.day}/'
-                          '${assignment.dueDate.year}',
-                        ),
-                        value:
-                            assignment.isCompleted,
-                        onChanged: (_) {
-                          if (isSelecting) {
-                            _toggleSelection(
-                              index,
-                            );
-                          } else {
-                            _toggleAssignmentCompletion(
-                              index,
-                            );
-                          }
-                        },
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText:
+                          'Search assignments...',
+                      prefixIcon: const Icon(
+                        Icons.search,
                       ),
-                    );
-                  },
+                      suffixIcon:
+                          _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                  ),
+                                  onPressed: () {
+                                    _searchController
+                                        .clear();
+                                  },
+                                )
+                              : null,
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
+
+                Expanded(
+                  child: filteredIndexes.isEmpty
+                      ? Center(
+                          child: Text(
+                            assignments.isEmpty
+                                ? 'No assignments yet.'
+                                : 'No assignments found.',
+                          ),
+                        )
+                      : ListView.builder(
+                          padding:
+                              const EdgeInsets.only(
+                            top: 8,
+                            bottom: 100,
+                          ),
+                          itemCount:
+                              filteredIndexes.length,
+                          itemBuilder:
+                              (context, index) {
+                            // Get the ORIGINAL index.
+                            final originalIndex =
+                                filteredIndexes[index];
+
+                            final assignment =
+                                assignments[
+                                    originalIndex];
+
+                            final isSelected =
+                                _selectedAssignments
+                                    .contains(
+                              originalIndex,
+                            );
+
+                            return GestureDetector(
+                              onLongPress: () {
+                                _toggleSelection(
+                                  originalIndex,
+                                );
+                              },
+                              child:
+                                  CheckboxListTile(
+                                selected:
+                                    isSelected,
+                                title: Text(
+                                  assignment.title,
+                                  style:
+                                      TextStyle(
+                                    decoration:
+                                        assignment
+                                                .isCompleted
+                                            ? TextDecoration
+                                                .lineThrough
+                                            : TextDecoration
+                                                .none,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'Due: '
+                                  '${assignment.dueDate.month}/'
+                                  '${assignment.dueDate.day}/'
+                                  '${assignment.dueDate.year}',
+                                ),
+                                value: assignment
+                                    .isCompleted,
+                                onChanged: (_) {
+                                  if (isSelecting) {
+                                    _toggleSelection(
+                                      originalIndex,
+                                    );
+                                  } else {
+                                    _toggleAssignmentCompletion(
+                                      originalIndex,
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
       floatingActionButton: isSelecting
           ? FloatingActionButton(
               onPressed:
