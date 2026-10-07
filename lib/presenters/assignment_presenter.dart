@@ -17,11 +17,13 @@ class AssignmentPresenter {
 
   Future<void> addAssignment(
     String title,
+    String courseName,
     DateTime dueDate,
   ) async {
     final assignment =
         await Assignment.addAssignment(
       title,
+      courseName,
       dueDate,
     );
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../alert.dart';
 import '../presenters/assignment_presenter.dart';
+import '../presenters/course_presenter.dart';
+import '../widgets/add_fab.dart';
 
 class AssignmentListScreen extends StatefulWidget {
   const AssignmentListScreen({super.key});
@@ -16,6 +18,9 @@ class _AssignmentListScreenState
   final AssignmentPresenter _presenter =
       AssignmentPresenter();
 
+  final CoursePresenter _coursePresenter =
+      CoursePresenter();
+
   final Set<int> _selectedAssignments = {};
 
   final TextEditingController _searchController =
@@ -24,10 +29,16 @@ class _AssignmentListScreenState
   bool _isLoading = true;
   String _searchQuery = '';
 
+  String? _selectedCourseFilter;
+  String? _newAssignmentCourse;
+
+  List<String> _courseNames = [];
+
   @override
   void initState() {
     super.initState();
-    _loadAssignments();
+
+    _loadData();
 
     _searchController.addListener(() {
       setState(() {
@@ -42,30 +53,39 @@ class _AssignmentListScreenState
     super.dispose();
   }
 
-  Future<void> _loadAssignments() async {
+  Future<void> _loadData() async {
     try {
+      await _coursePresenter.loadCourses();
       await _presenter.loadAssignments();
 
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
+
+        _courseNames = _coursePresenter.courses
+            .map((course) => course.name)
+            .toList();
       });
     } catch (e) {
       debugPrint(
-        'ERROR LOADING ASSIGNMENTS: $e',
+        'ERROR LOADING ASSIGNMENTS/COURSES: $e',
       );
 
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
+
+        _courseNames = _coursePresenter.courses
+            .map((course) => course.name)
+            .toList();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Error loading assignments: $e',
+            'Error loading assignments or courses: $e',
           ),
         ),
       );
@@ -75,6 +95,11 @@ class _AssignmentListScreenState
   Future<void> _showAddAssignmentDialog() async {
     String title = '';
     DateTime? dueDate;
+
+    _newAssignmentCourse =
+        _courseNames.isNotEmpty
+            ? _courseNames.first
+            : null;
 
     await showDialog(
       context: context,
@@ -90,19 +115,41 @@ class _AssignmentListScreenState
                 children: [
                   TextField(
                     autofocus: true,
-                    decoration:
-                        const InputDecoration(
-                      hintText:
-                          'Assignment title',
+                    decoration: const InputDecoration(
+                      hintText: 'Assignment title',
                     ),
                     onChanged: (value) {
                       title = value;
                     },
                   ),
+
                   const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Course',
+                      border: OutlineInputBorder(),
+                    ),
+                    initialValue: _newAssignmentCourse,
+                    items: _courseNames
+                        .map(
+                          (name) => DropdownMenuItem<String>(
+                            value: name,
+                            child: Text(name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        _newAssignmentCourse = value;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
                   ListTile(
-                    contentPadding:
-                        EdgeInsets.zero,
+                    contentPadding: EdgeInsets.zero,
                     leading: const Icon(
                       Icons.calendar_today,
                     ),
@@ -117,18 +164,14 @@ class _AssignmentListScreenState
                       final selectedDate =
                           await showDatePicker(
                         context: context,
-                        initialDate:
-                            DateTime.now(),
-                        firstDate:
-                            DateTime.now(),
-                        lastDate:
-                            DateTime(2100),
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2100),
                       );
 
                       if (selectedDate != null) {
                         setDialogState(() {
-                          dueDate =
-                              selectedDate;
+                          dueDate = selectedDate;
                         });
                       }
                     },
@@ -138,39 +181,38 @@ class _AssignmentListScreenState
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
+                    Navigator.pop(dialogContext);
                   },
-                  child: const Text(
-                    'Cancel',
-                  ),
+                  child: const Text('Cancel'),
                 ),
+
                 ElevatedButton(
                   onPressed: () async {
                     if (title.trim().isEmpty ||
-                        dueDate == null) {
+                        dueDate == null ||
+                        _newAssignmentCourse == null) {
                       return;
                     }
 
                     final assignmentTitle =
                         title.trim();
 
+                    final assignmentCourse =
+                        _newAssignmentCourse!;
+
                     final assignmentDueDate =
                         dueDate!;
 
                     try {
-                      await _presenter
-                          .addAssignment(
+                      await _presenter.addAssignment(
                         assignmentTitle,
+                        assignmentCourse,
                         assignmentDueDate,
                       );
 
                       if (!mounted) return;
 
-                      Navigator.pop(
-                        dialogContext,
-                      );
+                      Navigator.pop(dialogContext);
 
                       setState(() {});
 
@@ -185,9 +227,8 @@ class _AssignmentListScreenState
 
                       if (!mounted) return;
 
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
                         SnackBar(
                           content: Text(
                             'Error adding assignment: $e',
@@ -268,8 +309,7 @@ class _AssignmentListScreenState
 
   void _toggleSelection(int index) {
     setState(() {
-      if (_selectedAssignments
-          .contains(index)) {
+      if (_selectedAssignments.contains(index)) {
         _selectedAssignments.remove(index);
       } else {
         _selectedAssignments.add(index);
@@ -303,9 +343,7 @@ class _AssignmentListScreenState
                   false,
                 );
               },
-              child: const Text(
-                'Cancel',
-              ),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -314,9 +352,7 @@ class _AssignmentListScreenState
                   true,
                 );
               },
-              child: const Text(
-                'Delete',
-              ),
+              child: const Text('Delete'),
             ),
           ],
         );
@@ -362,14 +398,10 @@ class _AssignmentListScreenState
     final isSelecting =
         _selectedAssignments.isNotEmpty;
 
-    // Create a list of the ORIGINAL assignment
-    // indexes that match the search.
-    //
-    // This is important because the presenter
-    // still expects the original assignment index
-    // when completing/deleting assignments.
-    final filteredIndexes =
-        <int>[];
+    // Keep the original assignment indexes so
+    // completion and deletion continue to work
+    // correctly after filtering.
+    final filteredIndexes = <int>[];
 
     final query =
         _searchQuery.trim().toLowerCase();
@@ -379,15 +411,69 @@ class _AssignmentListScreenState
         i++) {
       final assignment = assignments[i];
 
-      if (query.isEmpty ||
+      final matchesSearch =
+          query.isEmpty ||
           assignment.title
               .toLowerCase()
-              .contains(query)) {
+              .contains(query);
+
+      final matchesCourse =
+          _selectedCourseFilter == null ||
+          assignment.courseName ==
+              _selectedCourseFilter;
+
+      if (matchesSearch &&
+          matchesCourse) {
         filteredIndexes.add(i);
       }
     }
 
     return Scaffold(
+      appBar: AppBar(
+        actions: [
+          if (_courseNames.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(
+                right: 8,
+              ),
+              child:
+                  DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  dropdownColor:
+                      Theme.of(context)
+                          .colorScheme
+                          .surface,
+                  hint: const Text(
+                    'Filter by course',
+                  ),
+                  value: _selectedCourseFilter,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(
+                        'All courses',
+                      ),
+                    ),
+                    ..._courseNames.map(
+                      (name) =>
+                          DropdownMenuItem<String?>(
+                        value: name,
+                        child: Text(name),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCourseFilter =
+                          value;
+                    });
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(),
@@ -395,24 +481,28 @@ class _AssignmentListScreenState
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding:
+                      const EdgeInsets.fromLTRB(
                     16,
                     8,
                     16,
                     8,
                   ),
                   child: TextField(
-                    controller: _searchController,
+                    controller:
+                        _searchController,
                     decoration: InputDecoration(
                       hintText:
                           'Search assignments...',
-                      prefixIcon: const Icon(
+                      prefixIcon:
+                          const Icon(
                         Icons.search,
                       ),
                       suffixIcon:
                           _searchQuery.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(
+                                  icon:
+                                      const Icon(
                                     Icons.clear,
                                   ),
                                   onPressed: () {
@@ -421,9 +511,12 @@ class _AssignmentListScreenState
                                   },
                                 )
                               : null,
-                      border: OutlineInputBorder(
+                      border:
+                          OutlineInputBorder(
                         borderRadius:
-                            BorderRadius.circular(12),
+                            BorderRadius.circular(
+                          12,
+                        ),
                       ),
                     ),
                   ),
@@ -448,9 +541,9 @@ class _AssignmentListScreenState
                               filteredIndexes.length,
                           itemBuilder:
                               (context, index) {
-                            // Get the ORIGINAL index.
                             final originalIndex =
-                                filteredIndexes[index];
+                                filteredIndexes[
+                                    index];
 
                             final assignment =
                                 assignments[
@@ -472,10 +565,10 @@ class _AssignmentListScreenState
                                   CheckboxListTile(
                                 selected:
                                     isSelected,
+
                                 title: Text(
                                   assignment.title,
-                                  style:
-                                      TextStyle(
+                                  style: TextStyle(
                                     decoration:
                                         assignment
                                                 .isCompleted
@@ -485,14 +578,19 @@ class _AssignmentListScreenState
                                                 .none,
                                   ),
                                 ),
+
                                 subtitle: Text(
+                                  'Course: '
+                                  '${assignment.courseName}\n'
                                   'Due: '
                                   '${assignment.dueDate.month}/'
                                   '${assignment.dueDate.day}/'
                                   '${assignment.dueDate.year}',
                                 ),
+
                                 value: assignment
                                     .isCompleted,
+
                                 onChanged: (_) {
                                   if (isSelecting) {
                                     _toggleSelection(
@@ -511,21 +609,20 @@ class _AssignmentListScreenState
                 ),
               ],
             ),
-      floatingActionButton: isSelecting
-          ? FloatingActionButton(
-              onPressed:
-                  _deleteSelectedAssignments,
-              child: const Icon(
-                Icons.delete,
-              ),
-            )
-          : FloatingActionButton(
-              onPressed:
-                  _showAddAssignmentDialog,
-              child: const Icon(
-                Icons.add,
-              ),
-            ),
+
+      floatingActionButton:
+          isSelecting
+              ? FloatingActionButton(
+                  onPressed:
+                      _deleteSelectedAssignments,
+                  child: const Icon(
+                    Icons.delete,
+                  ),
+                )
+              : AddFAB(
+                  onPressed:
+                      _showAddAssignmentDialog,
+                ),
     );
   }
 }

@@ -6,12 +6,14 @@ class Assignment {
   final String? id;
   final String title;
   final DateTime dueDate;
+  final String courseName;
   bool isCompleted;
 
   Assignment({
     this.id,
     required this.title,
     required this.dueDate,
+    required this.courseName,
     this.isCompleted = false,
   });
 
@@ -40,6 +42,9 @@ class Assignment {
       id: id,
       title: data['title']?.toString() ?? '',
       dueDate: parsedDueDate,
+      courseName:
+          data['courseName']?.toString() ??
+          'Unknown',
       isCompleted: data['isCompleted'] == true,
     );
   }
@@ -48,6 +53,7 @@ class Assignment {
     return {
       'title': title,
       'dueDate': dueDate.toIso8601String(),
+      'courseName': courseName,
       'isCompleted': isCompleted,
     };
   }
@@ -140,6 +146,7 @@ class Assignment {
   static Future<Assignment?>
       addAssignment(
     String title,
+    String courseName,
     DateTime dueDate,
   ) async {
     final user = _auth.currentUser;
@@ -165,6 +172,7 @@ class Assignment {
         id: newAssignmentRef.key,
         title: title,
         dueDate: dueDate,
+        courseName: courseName,
         isCompleted: false,
       );
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../presenters/course_presenter.dart';
+import '../widgets/add_fab.dart';
 
 class CourseListScreen extends StatefulWidget {
   const CourseListScreen({super.key});
@@ -155,13 +156,15 @@ class _CourseListScreenState
     final courses = _presenter.courses;
 
     final filteredCourses = courses.where((course) {
-      final query = _searchQuery.trim().toLowerCase();
+      final query =
+          _searchQuery.trim().toLowerCase();
 
       if (query.isEmpty) {
         return true;
       }
 
-      final name = course.name.toLowerCase();
+      final name =
+          course.name.toLowerCase();
 
       final description =
           course.description?.toLowerCase() ?? '';
@@ -190,16 +193,18 @@ class _CourseListScreenState
                     8,
                   ),
                   child: TextField(
-                    controller: _searchController,
+                    controller:
+                        _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Search courses...',
-                      prefixIcon: const Icon(
-                        Icons.search,
-                      ),
+                      hintText:
+                          'Search courses...',
+                      prefixIcon:
+                          const Icon(Icons.search),
                       suffixIcon:
                           _searchQuery.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(
+                                  icon:
+                                      const Icon(
                                     Icons.clear,
                                   ),
                                   onPressed: () {
@@ -210,7 +215,9 @@ class _CourseListScreenState
                               : null,
                       border: OutlineInputBorder(
                         borderRadius:
-                            BorderRadius.circular(12),
+                            BorderRadius.circular(
+                          12,
+                        ),
                       ),
                     ),
                   ),
@@ -236,7 +243,8 @@ class _CourseListScreenState
                           itemBuilder:
                               (context, index) {
                             final course =
-                                filteredCourses[index];
+                                filteredCourses[
+                                    index];
 
                             return ListTile(
                               title: Text(
@@ -260,9 +268,10 @@ class _CourseListScreenState
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton(
+
+      // Reusable Add button from Part 2.
+      floatingActionButton: AddFAB(
         onPressed: _showAddCourseDialog,
-        child: const Icon(Icons.add),
       ),
     );
   }
