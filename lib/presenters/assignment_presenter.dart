@@ -1,14 +1,13 @@
+
 import '../models/assignment_model.dart';
 
 class AssignmentPresenter {
   final List<Assignment> _assignments = [];
 
-  List<Assignment> get assignments =>
-      _assignments;
+  List<Assignment> get assignments => _assignments;
 
   Future<void> loadAssignments() async {
-    final fetched =
-        await Assignment.fetchAssignments();
+    final fetched = await Assignment.fetchAssignments();
 
     _assignments
       ..clear()
@@ -20,8 +19,7 @@ class AssignmentPresenter {
     String courseName,
     DateTime dueDate,
   ) async {
-    final assignment =
-        await Assignment.addAssignment(
+    final assignment = await Assignment.addAssignment(
       title,
       courseName,
       dueDate,
@@ -32,43 +30,42 @@ class AssignmentPresenter {
     }
   }
 
-  Future<void> toggleCompleted(
-    int index,
-  ) async {
-    if (index < 0 ||
-        index >= _assignments.length) {
+  Future<void> toggleCompleted(int index) async {
+    if (index < 0 || index >= _assignments.length) {
       return;
     }
 
     final assignment = _assignments[index];
 
-    await Assignment.updateCompletionStatus(
-      assignment,
-    );
+    await Assignment.updateCompletionStatus(assignment);
 
-    assignment.isCompleted =
-        !assignment.isCompleted;
+    assignment.isCompleted = !assignment.isCompleted;
   }
 
-  Future<void> deleteAssignments(
-    Set<int> indexes,
-  ) async {
+  Future<void> deleteAssignments(Set<int> indexes) async {
     final sortedIndexes = indexes.toList()
       ..sort((a, b) => b.compareTo(a));
 
     for (final index in sortedIndexes) {
-      if (index < 0 ||
-          index >= _assignments.length) {
+      if (index < 0 || index >= _assignments.length) {
         continue;
       }
 
       final assignment = _assignments[index];
 
-      await Assignment.deleteAssignment(
-        assignment,
-      );
+      await Assignment.deleteAssignment(assignment);
 
       _assignments.removeAt(index);
     }
   }
+
+  int get totalAssignments => _assignments.length;
+
+  int get completedAssignments =>
+      _assignments.where((a) => a.isCompleted).length;
+
+  double get completionRatio =>
+      totalAssignments == 0
+          ? 0.0
+          : completedAssignments / totalAssignments;
 }
