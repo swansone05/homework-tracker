@@ -51,9 +51,9 @@ class _MainNavigationState
           bottom: 8,
         ),
         child: Container(
-          color: Colors.white,
+          color: const Color.fromARGB(255, 225, 96, 96),
           child: BottomNavigationBar(
-            backgroundColor: Colors.white,
+            backgroundColor: const Color.fromARGB(255, 71, 50, 50),
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
             selectedItemColor: Colors.black,

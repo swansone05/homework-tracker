@@ -60,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      progressColor: Colors.purple,
-                      backgroundColor: Colors.grey.shade300,
+                      progressColor: const Color.fromARGB(255, 9, 194, 52),
+                      backgroundColor: const Color.fromARGB(255, 233, 30, 30),
                       animation: true,
                       animationDuration: 800,
                       footer: const Padding(
